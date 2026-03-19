@@ -1,0 +1,79 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id       String   @id @default(uuid())
+  phone    String   @unique
+  password String
+  role     String
+  residents Resident[]
+}
+
+model Resident {
+  id       String   @id @default(uuid())
+  name     String
+  email    String   @unique
+  phone    String   @unique
+  flatNo   String
+  userId   String
+  user     User     @relation(fields: [userId], references: [id])
+  visitors Visitor[]
+  requests MaintenanceRequest[]
+  bookings Booking[]
+  notifications Notification[]
+}
+
+model Announcement {
+  id      String   @id @default(uuid())
+  title   String
+  content String
+  createdAt DateTime @default(now())
+}
+
+model MaintenanceRequest {
+  id          String   @id @default(uuid())
+  description String
+  residentId  String
+  resident    Resident @relation(fields: [residentId], references: [id])
+}
+
+model Visitor {
+  id          String   @id @default(uuid())
+  name        String
+  purpose     String
+  residentId  String
+  resident    Resident @relation(fields: [residentId], references: [id])
+}
+
+model Facility {
+  id   String   @id @default(uuid())
+  name String
+  bookings Booking[]
+}
+
+model Booking {
+  id          String   @id @default(uuid())
+  facilityId  String
+  residentId  String
+  date        DateTime
+  facility    Facility @relation(fields: [facilityId], references: [id])
+  resident    Resident @relation(fields: [residentId], references: [id])
+}
+
+model Notification {
+  id          String   @id @default(uuid())
+  message     String
+  createdAt   DateTime @default(now())
+  residentId  String
+  resident    Resident @relation(fields: [residentId], references: [id])
+}

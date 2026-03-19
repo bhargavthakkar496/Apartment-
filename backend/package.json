@@ -1,0 +1,23 @@
+{
+  "name": "society-backend",
+  "version": "0.1.0",
+  "scripts": {
+    "start": "node dist/main.js",
+    "start:dev": "nest start --watch"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "prisma": "^7.5.0"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.1.17",
+    "@nestjs/core": "^11.1.17",
+    "@nestjs/jwt": "^11.0.2",
+    "@nestjs/platform-express": "^11.1.17",
+    "@prisma/adapter-pg": "^7.5.0",
+    "@prisma/client": "^7.5.0",
+    "bcrypt": "^6.0.0",
+    "dotenv": "^17.3.1",
+    "pg": "^8.20.0"
+  }
+}
