@@ -50,7 +50,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Registration successful. Token: $token')),
         );
-        Navigator.pushReplacementNamed(context, '/resident-dashboard');
+        Navigator.pushReplacementNamed(context, '/tenant-dashboard');
         return;
       }
 
@@ -111,7 +111,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               initialValue: _role,
               decoration: const InputDecoration(labelText: 'Role'),
               items: const [
-                DropdownMenuItem(value: 'resident', child: Text('Resident')),
+                DropdownMenuItem(value: 'resident', child: Text('Tenant')),
                 DropdownMenuItem(value: 'admin', child: Text('Admin')),
               ],
               onChanged: (value) {

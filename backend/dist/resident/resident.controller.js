@@ -20,10 +20,16 @@ let ResidentController = class ResidentController {
         this.residentService = residentService;
     }
     async create(body) {
-        return this.residentService.createResident(body.name, body.email, body.phone, body.flatNo, body.userId);
+        return this.residentService.createResident(body.name, body.email, body.phone, body.flatNo, body.userId, body.societyId);
     }
     async findAll() {
         return this.residentService.getResidents();
+    }
+    async findOne(id) {
+        return this.residentService.getResidentById(id);
+    }
+    async moveOut(id) {
+        return this.residentService.moveOutResident(id);
     }
 };
 exports.ResidentController = ResidentController;
@@ -40,6 +46,20 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], ResidentController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Get)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], ResidentController.prototype, "findOne", null);
+__decorate([
+    (0, common_1.Post)(':id/move-out'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], ResidentController.prototype, "moveOut", null);
 exports.ResidentController = ResidentController = __decorate([
     (0, common_1.Controller)('resident'),
     __metadata("design:paramtypes", [resident_service_1.ResidentService])

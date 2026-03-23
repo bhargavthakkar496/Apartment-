@@ -38,7 +38,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (response.statusCode == 200) {
         final data = body as Map<String, dynamic>;
         final role = data['user']?['role']?.toString();
-        final nextRoute = role == 'admin' ? '/dashboard' : '/resident-dashboard';
+        final nextRoute = role == 'admin' ? '/dashboard' : '/tenant-dashboard';
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Login successful. Token: ${data['access_token']}')),

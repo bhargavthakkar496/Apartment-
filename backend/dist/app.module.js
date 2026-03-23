@@ -14,6 +14,8 @@ const maintenance_module_1 = require("./maintenance/maintenance.module");
 const visitor_module_1 = require("./visitor/visitor.module");
 const resident_module_1 = require("./resident/resident.module");
 const notifications_module_1 = require("./notifications/notifications.module");
+const society_module_1 = require("./society/society.module");
+const facility_module_1 = require("./facility/facility.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -26,6 +28,8 @@ exports.AppModule = AppModule = __decorate([
             visitor_module_1.VisitorModule,
             resident_module_1.ResidentModule,
             notifications_module_1.NotificationsModule,
+            society_module_1.SocietyModule,
+            facility_module_1.FacilityModule,
         ],
         controllers: [],
         providers: [],

@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "scripts": {
     "start": "node dist/main.js",
-    "start:dev": "nest start --watch"
+    "start:dev": "nest start --watch",
+    "db:push": "prisma db push",
+    "db:generate": "prisma generate",
+    "seed:societies": "node scripts/seed-societies.js"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",

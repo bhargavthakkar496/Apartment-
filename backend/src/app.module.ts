@@ -5,6 +5,8 @@ import { MaintenanceModule } from './maintenance/maintenance.module';
 import { VisitorModule } from './visitor/visitor.module';
 import { ResidentModule } from './resident/resident.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { SocietyModule } from './society/society.module';
+import { FacilityModule } from './facility/facility.module';
 
 @Module({
   imports: [
@@ -14,6 +16,8 @@ import { NotificationsModule } from './notifications/notifications.module';
     VisitorModule,
     ResidentModule,
     NotificationsModule,
+    SocietyModule,
+    FacilityModule,
   ],
   controllers: [],
   providers: [],

@@ -12,25 +12,88 @@ datasource db {
 }
 
 model User {
-  id       String   @id @default(uuid())
-  phone    String   @unique
-  password String
-  role     String
-  residents Resident[]
+  id                String             @id @default(uuid())
+  phone             String             @unique
+  password          String
+  role              String
+  residents         Resident[]
+  passwordResetOtps PasswordResetOtp[]
+}
+
+model PasswordResetOtp {
+  id        String   @id @default(uuid())
+  userId    String
+  phone     String
+  email     String
+  otpHash   String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Society {
+  id             String          @id @default(uuid())
+  country        String
+  state          String
+  city           String
+  area           String
+  pincode        String
+  name           String
+  type           String
+  createdAt      DateTime        @default(now())
+  residents      Resident[]
+  apartmentUnits ApartmentUnit[]
+  maintenancePayments MaintenancePayment[]
+
+  @@unique([country, state, city, area, name])
+}
+
+model ApartmentUnit {
+  id         String   @id @default(uuid())
+  societyId  String
+  flatNumber String
+  createdAt  DateTime @default(now())
+  society    Society  @relation(fields: [societyId], references: [id], onDelete: Cascade)
+  maintenancePayments MaintenancePayment[]
+
+  @@unique([societyId, flatNumber])
 }
 
 model Resident {
-  id       String   @id @default(uuid())
-  name     String
-  email    String   @unique
-  phone    String   @unique
-  flatNo   String
-  userId   String
-  user     User     @relation(fields: [userId], references: [id])
-  visitors Visitor[]
-  requests MaintenanceRequest[]
-  bookings Booking[]
+  id            String   @id @default(uuid())
+  name          String
+  email         String   @unique
+  phone         String   @unique
+  flatNo        String
+  isActive      Boolean  @default(true)
+  movedOutAt    DateTime?
+  userId        String
+  societyId     String?
+  user          User     @relation(fields: [userId], references: [id])
+  society       Society? @relation(fields: [societyId], references: [id])
+  visitors      Visitor[]
+  requests      MaintenanceRequest[]
+  bookings      Booking[]
   notifications Notification[]
+  maintenancePayments MaintenancePayment[] @relation("MaintenanceCollector")
+}
+
+model MaintenancePayment {
+  id                   String   @id @default(uuid())
+  societyId            String
+  apartmentUnitId      String
+  flatNumber           String
+  cycleMonth           String
+  amount               Int
+  collectedAt          DateTime?
+  collectedByResidentId String?
+  createdAt            DateTime @default(now())
+  society              Society  @relation(fields: [societyId], references: [id], onDelete: Cascade)
+  apartmentUnit        ApartmentUnit @relation(fields: [apartmentUnitId], references: [id], onDelete: Cascade)
+  collectedByResident  Resident? @relation("MaintenanceCollector", fields: [collectedByResidentId], references: [id])
+
+  @@unique([societyId, apartmentUnitId, cycleMonth])
 }
 
 model Announcement {
@@ -56,18 +119,28 @@ model Visitor {
 }
 
 model Facility {
-  id   String   @id @default(uuid())
-  name String
-  bookings Booking[]
+  id               String   @id @default(uuid())
+  name             String   @unique
+  capacity         Int      @default(1)
+  requiresTimeslot Boolean  @default(false)
+  bookings         Booking[]
 }
 
 model Booking {
-  id          String   @id @default(uuid())
-  facilityId  String
-  residentId  String
-  date        DateTime
-  facility    Facility @relation(fields: [facilityId], references: [id])
-  resident    Resident @relation(fields: [residentId], references: [id])
+  id                   String   @id @default(uuid())
+  facilityId           String
+  residentId           String
+  date                 DateTime
+  bookingDate          String
+  timeSlot             String?
+  status               String   @default("pending")
+  approvedAt           DateTime?
+  approvedByResidentId String?
+  rejectedAt           DateTime?
+  facility             Facility @relation(fields: [facilityId], references: [id])
+  resident             Resident @relation(fields: [residentId], references: [id])
+
+  @@index([facilityId, bookingDate, timeSlot, status])
 }
 
 model Notification {

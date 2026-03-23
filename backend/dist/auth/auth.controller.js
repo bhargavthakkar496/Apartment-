@@ -19,14 +19,31 @@ let AuthController = class AuthController {
     constructor(authService) {
         this.authService = authService;
     }
+    async accountStatus(body) {
+        return this.authService.getAccountStatus(body.phone);
+    }
     async login(body) {
         return this.authService.login(body.phone, body.password);
     }
     async register(body) {
-        return this.authService.register(body.phone, body.password, body.role, body.name, body.email, body.flatNo);
+        return this.authService.register(body.phone, body.password, body.role, body.name, body.email, body.flatNo, body.societyId);
+    }
+    async requestPasswordReset(body) {
+        return this.authService.requestPasswordReset(body.phone);
+    }
+    async resetPassword(body) {
+        return this.authService.resetPassword(body.phone, body.otp, body.newPassword);
     }
 };
 exports.AuthController = AuthController;
+__decorate([
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, common_1.Post)('account-status'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "accountStatus", null);
 __decorate([
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     (0, common_1.Post)('login'),
@@ -42,6 +59,22 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "register", null);
+__decorate([
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, common_1.Post)('forgot-password/request'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "requestPasswordReset", null);
+__decorate([
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, common_1.Post)('forgot-password/reset'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "resetPassword", null);
 exports.AuthController = AuthController = __decorate([
     (0, common_1.Controller)('auth'),
     __metadata("design:paramtypes", [auth_service_1.AuthService])

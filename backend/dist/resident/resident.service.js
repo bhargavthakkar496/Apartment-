@@ -16,13 +16,52 @@ let ResidentService = class ResidentService {
     constructor(prisma) {
         this.prisma = prisma;
     }
-    async createResident(name, email, phone, flatNo, userId) {
+    async createResident(name, email, phone, flatNo, userId, societyId) {
         return this.prisma.resident.create({
-            data: { name, email, phone, flatNo, userId },
+            data: { name, email, phone, flatNo, userId, societyId },
         });
     }
     async getResidents() {
-        return this.prisma.resident.findMany();
+        return this.prisma.resident.findMany({
+            where: {
+                isActive: true,
+            },
+            include: { society: true },
+        });
+    }
+    async getResidentById(id) {
+        return this.prisma.resident.findUnique({
+            where: { id },
+            include: { society: true },
+        });
+    }
+    async moveOutResident(id) {
+        const residentId = id.trim();
+        if (!residentId) {
+            throw new common_1.BadRequestException('residentId is required');
+        }
+        const resident = await this.prisma.resident.findUnique({
+            where: { id: residentId },
+            include: {
+                society: true,
+            },
+        });
+        if (!resident) {
+            throw new common_1.NotFoundException('Resident record was not found');
+        }
+        if (!resident.isActive) {
+            throw new common_1.BadRequestException('This apartment association is already inactive.');
+        }
+        return this.prisma.resident.update({
+            where: { id: residentId },
+            data: {
+                isActive: false,
+                movedOutAt: new Date(),
+            },
+            include: {
+                society: true,
+            },
+        });
     }
 };
 exports.ResidentService = ResidentService;

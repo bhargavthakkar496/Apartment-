@@ -15,6 +15,21 @@ class NotificationsScreen extends StatefulWidget {
 class _NotificationsScreenState extends State<NotificationsScreen> {
   List<dynamic> notifications = [];
 
+  String _displayMessage(String rawMessage) {
+    final match = RegExp(
+      r'^\[repair-request:([^:\]]+):(pending|in_progress|resolved)\]\s*(.*)$',
+      caseSensitive: false,
+    ).firstMatch(rawMessage);
+
+    if (match == null) {
+      return rawMessage;
+    }
+
+    return match.group(3)?.trim().isNotEmpty == true
+        ? match.group(3)!.trim()
+        : 'Repair/problem request updated.';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -50,7 +65,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         itemBuilder: (context, index) {
           final notification = notifications[index];
           return ListTile(
-            title: Text(notification['message']),
+            title: Text(
+              _displayMessage(notification['message']?.toString() ?? ''),
+            ),
             subtitle: Text(notification['createdAt']),
           );
         },
