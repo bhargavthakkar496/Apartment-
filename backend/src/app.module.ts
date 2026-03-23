@@ -7,6 +7,7 @@ import { ResidentModule } from './resident/resident.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { SocietyModule } from './society/society.module';
 import { FacilityModule } from './facility/facility.module';
+import { TeleconsultationModule } from './teleconsultation/teleconsultation.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { FacilityModule } from './facility/facility.module';
     NotificationsModule,
     SocietyModule,
     FacilityModule,
+    TeleconsultationModule,
   ],
   controllers: [],
   providers: [],
