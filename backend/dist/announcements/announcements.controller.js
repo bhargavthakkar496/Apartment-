@@ -20,10 +20,10 @@ let AnnouncementsController = class AnnouncementsController {
         this.announcementsService = announcementsService;
     }
     async create(body) {
-        return this.announcementsService.createAnnouncement(body.title, body.content);
+        return this.announcementsService.createAnnouncement(body);
     }
-    async findAll() {
-        return this.announcementsService.getAnnouncements();
+    async findAll(role) {
+        return this.announcementsService.getAnnouncements(role);
     }
 };
 exports.AnnouncementsController = AnnouncementsController;
@@ -36,8 +36,9 @@ __decorate([
 ], AnnouncementsController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)(),
+    __param(0, (0, common_1.Query)('role')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], AnnouncementsController.prototype, "findAll", null);
 exports.AnnouncementsController = AnnouncementsController = __decorate([

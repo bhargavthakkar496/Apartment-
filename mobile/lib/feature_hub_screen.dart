@@ -28,7 +28,10 @@ class FeatureHubScreen extends StatelessWidget {
       if (isChairman)
         (
           title: 'Maintenance Overview',
-          screen: ChairmanDashboardScreen(residentId: residentId),
+          screen: ChairmanDashboardScreen(
+            residentId: residentId,
+            residentName: residentName,
+          ),
         ),
       if (isChairman)
         (
@@ -40,7 +43,13 @@ class FeatureHubScreen extends StatelessWidget {
           title: 'Repair Requests',
           screen: ChairmanRepairRequestsScreen(residentId: residentId),
         ),
-      (title: 'Announcements', screen: const DashboardScreen()),
+      (
+        title: 'Announcements',
+        screen: DashboardScreen(
+          role: role,
+          residentName: residentName,
+        ),
+      ),
       (
         title: 'Facility Booking',
         screen: FacilityBookingScreen(residentId: residentId),

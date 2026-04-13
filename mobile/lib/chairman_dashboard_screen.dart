@@ -11,9 +11,11 @@ class ChairmanDashboardScreen extends StatefulWidget {
   const ChairmanDashboardScreen({
     super.key,
     required this.residentId,
+    this.residentName,
   });
 
   final String? residentId;
+  final String? residentName;
 
   @override
   State<ChairmanDashboardScreen> createState() => _ChairmanDashboardScreenState();
@@ -28,22 +30,39 @@ class _ChairmanDashboardScreenState extends State<ChairmanDashboardScreen> {
   ];
 
   Map<String, dynamic>? _overview;
+  List<Map<String, dynamic>> _announcements = [];
   bool _isLoading = true;
+  bool _isLoadingAnnouncements = true;
   bool _isNotifyingAllPending = false;
+  bool _isSubmittingAnnouncement = false;
   String? _busyPaymentId;
   int _selectedFilterIndex = 1;
   final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _announcementTitleController =
+      TextEditingController();
+  final TextEditingController _announcementContentController =
+      TextEditingController();
+  final Set<String> _selectedAnnouncementRoles = {'resident', 'owner'};
 
   @override
   void initState() {
     super.initState();
-    _fetchOverview();
+    _refreshDashboard();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _announcementTitleController.dispose();
+    _announcementContentController.dispose();
     super.dispose();
+  }
+
+  Future<void> _refreshDashboard() async {
+    await Future.wait([
+      _fetchOverview(),
+      _fetchAnnouncements(),
+    ]);
   }
 
   Future<void> _fetchOverview() async {
@@ -83,6 +102,103 @@ class _ChairmanDashboardScreenState extends State<ChairmanDashboardScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Failed to load maintenance overview.')),
     );
+  }
+
+  Future<void> _fetchAnnouncements() async {
+    setState(() {
+      _isLoadingAnnouncements = true;
+    });
+
+    final response = await http.get(ApiConfig.uri('/announcements'));
+
+    if (!mounted) return;
+
+    if (response.statusCode == 200) {
+      final decoded = jsonDecode(response.body) as List<dynamic>;
+      setState(() {
+        _announcements = decoded
+            .map((item) => Map<String, dynamic>.from(item as Map))
+            .toList();
+        _isLoadingAnnouncements = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoadingAnnouncements = false;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Failed to load announcements.')),
+    );
+  }
+
+  Future<void> _submitAnnouncement() async {
+    if (_isSubmittingAnnouncement) return;
+
+    final title = _announcementTitleController.text.trim();
+    final content = _announcementContentController.text.trim();
+    if (title.isEmpty || content.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Add both a title and message.')),
+      );
+      return;
+    }
+
+    if (_selectedAnnouncementRoles.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Select at least one audience.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isSubmittingAnnouncement = true;
+    });
+
+    try {
+      final response = await http.post(
+        ApiConfig.uri('/announcements'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'title': title,
+          'content': content,
+          'targetRoles': _selectedAnnouncementRoles.toList(),
+          'createdByRole': 'chairman',
+          'createdByName': widget.residentName ?? 'Chairman',
+        }),
+      );
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        _announcementTitleController.clear();
+        _announcementContentController.clear();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Announcement sent to ${_audienceSummary(_selectedAnnouncementRoles.toList())}.',
+            ),
+          ),
+        );
+        await _fetchAnnouncements();
+        return;
+      }
+
+      final body =
+          response.body.isNotEmpty ? jsonDecode(response.body) : null;
+      final message = body is Map<String, dynamic> && body['message'] != null
+          ? body['message'].toString()
+          : 'Unable to publish the announcement.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmittingAnnouncement = false;
+        });
+      }
+    }
   }
 
   Future<void> _markCollected(String paymentId) async {
@@ -265,6 +381,63 @@ class _ChairmanDashboardScreenState extends State<ChairmanDashboardScreen> {
     return '${parsed.day} ${months[parsed.month - 1]} ${parsed.year}';
   }
 
+  String _formatDateTimeLabel(String? isoValue) {
+    if (isoValue == null || isoValue.isEmpty) {
+      return 'Just now';
+    }
+
+    final parsed = DateTime.tryParse(isoValue);
+    if (parsed == null) {
+      return isoValue;
+    }
+
+    final local = parsed.toLocal();
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    final hour = local.hour == 0 ? 12 : (local.hour > 12 ? local.hour - 12 : local.hour);
+    final minute = local.minute.toString().padLeft(2, '0');
+    final period = local.hour >= 12 ? 'PM' : 'AM';
+    return '${local.day} ${months[local.month - 1]}, $hour:$minute $period';
+  }
+
+  String _roleAudienceLabel(String role) {
+    switch (role) {
+      case 'resident':
+        return 'Tenant';
+      case 'owner':
+        return 'Owner';
+      default:
+        return role;
+    }
+  }
+
+  String _audienceSummary(List<dynamic> roles) {
+    final labels = roles
+        .map((role) => _roleAudienceLabel(role?.toString() ?? ''))
+        .where((label) => label.isNotEmpty)
+        .toList();
+
+    if (labels.isEmpty) {
+      return 'the community';
+    }
+    if (labels.length == 1) {
+      return labels.first;
+    }
+    return '${labels.first} and ${labels.last}';
+  }
+
   List<Map<String, dynamic>> _filteredApartments(List<Map<String, dynamic>> apartments) {
     final selectedStatus = _filters[_selectedFilterIndex].status;
     final query = _searchController.text.trim().toLowerCase();
@@ -435,7 +608,7 @@ class _ChairmanDashboardScreenState extends State<ChairmanDashboardScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Chairman Dashboard')),
       body: RefreshIndicator(
-        onRefresh: _fetchOverview,
+        onRefresh: _refreshDashboard,
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
@@ -526,6 +699,186 @@ class _ChairmanDashboardScreenState extends State<ChairmanDashboardScreen> {
                       'WhatsApp reminders include hardcoded chairman contact: +$chairmanNumber',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Push Announcements',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      widget.residentName == null
+                          ? 'Create notices for owners and tenants from the chairman desk.'
+                          : '${widget.residentName} can publish targeted updates for owners and tenants.',
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _announcementTitleController,
+                      decoration: const InputDecoration(
+                        labelText: 'Announcement title',
+                        hintText: 'Water tank cleaning on Saturday',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _announcementContentController,
+                      minLines: 3,
+                      maxLines: 5,
+                      decoration: const InputDecoration(
+                        labelText: 'Message',
+                        hintText:
+                            'Share the update, timing, and any action residents should take.',
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Target audience',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        for (final role in const ['resident', 'owner'])
+                          FilterChip(
+                            label: Text(_roleAudienceLabel(role)),
+                            selected: _selectedAnnouncementRoles.contains(role),
+                            onSelected: (selected) {
+                              setState(() {
+                                if (selected) {
+                                  _selectedAnnouncementRoles.add(role);
+                                } else {
+                                  _selectedAnnouncementRoles.remove(role);
+                                }
+                              });
+                            },
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: _isSubmittingAnnouncement
+                            ? null
+                            : _submitAnnouncement,
+                        icon: const Icon(Icons.campaign_outlined),
+                        label: Text(
+                          _isSubmittingAnnouncement
+                              ? 'Publishing...'
+                              : 'Push Announcement',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Recent Announcements',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                        ),
+                        if (_announcements.isNotEmpty)
+                          Text(
+                            '${_announcements.length} total',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    if (_isLoadingAnnouncements)
+                      const Center(child: CircularProgressIndicator())
+                    else if (_announcements.isEmpty)
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.04),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Text(
+                          'No announcements published yet. Create one for tenants or owners to preview the flow.',
+                        ),
+                      )
+                    else
+                      ..._announcements.take(4).map((announcement) {
+                        final roles =
+                            announcement['targetRoles'] as List<dynamic>? ??
+                                <dynamic>[];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: Colors.indigo.withOpacity(0.06),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  announcement['title']?.toString() ??
+                                      'Untitled announcement',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.w700),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(announcement['content']?.toString() ?? ''),
+                                const SizedBox(height: 10),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(999),
+                                      ),
+                                      child: Text(
+                                        'For ${_audienceSummary(roles)}',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(999),
+                                      ),
+                                      child: Text(
+                                        _formatDateTimeLabel(
+                                          announcement['createdAt']?.toString(),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
                   ],
                 ),
               ),

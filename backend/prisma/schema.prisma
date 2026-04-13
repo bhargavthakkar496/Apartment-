@@ -97,10 +97,13 @@ model MaintenancePayment {
 }
 
 model Announcement {
-  id      String   @id @default(uuid())
-  title   String
-  content String
-  createdAt DateTime @default(now())
+  id           String   @id @default(uuid())
+  title        String
+  content      String
+  targetRoles  String[]
+  createdByRole String  @default("chairman")
+  createdByName String?
+  createdAt    DateTime @default(now())
 }
 
 model MaintenanceRequest {
