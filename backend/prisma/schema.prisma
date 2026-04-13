@@ -72,11 +72,12 @@ model Resident {
   societyId     String?
   user          User     @relation(fields: [userId], references: [id])
   society       Society? @relation(fields: [societyId], references: [id])
-  visitors      Visitor[]
-  requests      MaintenanceRequest[]
-  bookings      Booking[]
-  notifications Notification[]
-  maintenancePayments MaintenancePayment[] @relation("MaintenanceCollector")
+  visitors                     Visitor[]
+  requests                     MaintenanceRequest[]
+  bookings                     Booking[]
+  notifications                Notification[]
+  maintenancePayments          MaintenancePayment[] @relation("MaintenanceCollector")
+  teleconsultationAppointments TeleconsultationAppointment[]
 }
 
 model MaintenancePayment {
@@ -152,4 +153,43 @@ model Notification {
   createdAt   DateTime @default(now())
   residentId  String
   resident    Resident @relation(fields: [residentId], references: [id])
+}
+
+model Doctor {
+  id               String   @id @default(uuid())
+  name             String   @unique
+  specialty        String
+  bio              String   @default("")
+  availableDays    String   @default("Mon,Tue,Wed,Thu,Fri")
+  availableSlots   String   @default("09:00-09:30,09:30-10:00,10:00-10:30,10:30-11:00,14:00-14:30,14:30-15:00,15:00-15:30,15:30-16:00")
+  createdAt        DateTime @default(now())
+  appointments     TeleconsultationAppointment[]
+}
+
+model TeleconsultationAppointment {
+  id          String   @id @default(uuid())
+  doctorId    String
+  residentId  String
+  date        String
+  timeSlot    String
+  status      String   @default("scheduled")
+  createdAt   DateTime @default(now())
+  doctor      Doctor   @relation(fields: [doctorId], references: [id])
+  resident    Resident @relation(fields: [residentId], references: [id])
+  messages    TeleconsultationMessage[]
+
+  @@index([residentId, date])
+  @@index([doctorId, date])
+}
+
+model TeleconsultationMessage {
+  id            String   @id @default(uuid())
+  appointmentId String
+  senderId      String
+  senderName    String
+  message       String
+  sentAt        DateTime @default(now())
+  appointment   TeleconsultationAppointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@index([appointmentId, sentAt])
 }

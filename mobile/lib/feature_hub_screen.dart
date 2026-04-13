@@ -5,6 +5,7 @@ import 'chairman_amenity_requests_screen.dart';
 import 'chairman_dashboard_screen.dart';
 import 'chairman_repair_requests_screen.dart';
 import 'dashboard_screen.dart';
+import 'doctors_screen.dart';
 import 'facility_booking_screen.dart';
 import 'notifications_screen.dart';
 import 'resident_dashboard_screen.dart';
@@ -63,6 +64,10 @@ class FeatureHubScreen extends StatelessWidget {
         screen: NotificationsScreen(
           residentId: residentId ?? 'resident-id-placeholder',
         ),
+      ),
+      (
+        title: 'Doctors & Teleconsultation',
+        screen: DoctorsScreen(residentId: residentId, residentName: residentName),
       ),
     ];
 
